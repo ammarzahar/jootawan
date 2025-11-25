@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="ms">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jootawan | Bina Empayar Anda</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        jootawan: {
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            500: '#f97316', // Orange-500
+                            600: '#ea580c', // Orange-600
+                            900: '#7c2d12',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            margin: 0;
+            overflow-x: hidden;
+            background-color: #ffffff;
+            color: #1a1a1a;
+        }
+
+        /* Fixed 3D background container for the flying cash effect */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.6;
+            /* Slight transparency so text pops */
+        }
+
+        /* Glass card styling */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(249, 115, 22, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(249, 115, 22, 0.15);
+            border-color: rgba(249, 115, 22, 0.3);
+        }
+
+        /* Scroll reveal animation */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out;
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* --- CSS for Infinite Scroll Carousel (NEW) --- */
+
+        /* Container untuk menyembunyikan logo yang berlebihan */
+        .scrolling-container {
+            width: 100%;
+            overflow: hidden;
+            mask-image: linear-gradient(to right,
+                    transparent,
+                    black 10%,
+                    black 90%,
+                    transparent);
+            /* Fade out the edges */
+        }
+
+        /* Trek yang memegang semua logo (diulang 2 kali) */
+        .scrolling-track {
+            display: flex;
+            width: calc(200px * 16);
+            /* 8 logo * 2 (duplikasi) * 200px (lebar logo) */
+            animation: scroll-left 40s linear infinite;
+        }
+
+        /* Hentikan tatal apabila hover untuk membenarkan interaksi */
+        .scrolling-track:hover {
+            animation-play-state: paused;
+        }
+
+        /* Gaya logo individu */
+        .logo-item {
+            width: 200px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 2rem;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .logo-item:hover {
+            transform: scale(1.05);
+        }
+
+        /* Definisi animasi tatal */
+        @keyframes scroll-left {
+            0% {
+                transform: translateX(0);
+            }
+
+            /* Tatal sejauh 50% lebar trek untuk kembali ke permulaan yang lancar */
+            100% {
+                transform: translateX(calc(-200px * 8));
+            }
+
+            /* -8 logo * 200px */
+        }
+
+        /* --- END NEW CSS --- */
+    </style>
+</head>
+
+<body>
+
+    <!-- 3D Background -->
+    <div id="canvas-container"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex-shrink-0 flex items-center gap-2 cursor-pointer">
+                    <img src="img/logo jootawan.svg" alt="Jootawan Logo" class="h-10">
+                    <span class="font-bold text-2xl tracking-tight text-gray-900">JOOTAWAN</span>
+                </div>
+                <div class="hidden md:flex space-x-8 items-center">
+                    <a href="#products"
+                        class="text-gray-600 hover:text-jootawan-500 font-medium transition-colors">Akademi</a>
+                    <a href="#ecosystem"
+                        class="text-gray-600 hover:text-jootawan-500 font-medium transition-colors">Ekosistem</a>
+                    <a href="#testimonials"
+                        class="text-gray-600 hover:text-jootawan-500 font-medium transition-colors">Testimonial</a>
+                    <a href="#about" class="text-gray-600 hover:text-jootawan-500 font-medium transition-colors">Tentang
+                        Kami</a>
+                    <button
+                        class="bg-jootawan-500 text-white px-6 py-2 rounded-full font-semibold hover:bg-jootawan-600 transition-all shadow-lg shadow-orange-200">
+                        Mulakan
+                    </button>
+                </div>
+                <!-- Mobile menu button -->
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-btn" class="text-gray-600 hover:text-jootawan-500 focus:outline-none">
+                        <i data-lucide="menu" class="w-8 h-8"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile Menu (Hidden by default) -->
+        <div id="mobile-menu"
+            class="hidden md:hidden bg-white/95 backdrop-blur-md absolute w-full border-b border-orange-100">
+            <div class="px-4 pt-2 pb-6 space-y-2">
+                <a href="#products"
+                    class="block px-3 py-2 text-gray-800 font-medium hover:bg-orange-50 rounded">Akademi</a>
+                <a href="#ecosystem"
+                    class="block px-3 py-2 text-gray-800 font-medium hover:bg-orange-50 rounded">Ekosistem</a>
+                <a href="#testimonials"
+                    class="block px-3 py-2 text-gray-800 font-medium hover:bg-orange-50 rounded">Testimonial</a>
+                <a href="#about" class="block px-3 py-2 text-gray-800 font-medium hover:bg-orange-50 rounded">Tentang
+                    Kami</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center max-w-4xl mx-auto">
+                <div
+                    class="inline-flex items-center px-4 py-2 rounded-full bg-orange-50 border border-orange-10-0 text-jootawan-600 font-semibold text-sm mb-6 reveal">
+                    <i data-lucide="zap" class="w-4 h-4 mr-2"></i> Percepatkan Kekayaan Anda
+                </div>
+                <h1 class="text-5xl md:text-7xl font-extrabold text-gray-900 tracking-tight mb-8 leading-tight reveal"
+                    style="transition-delay: 100ms;">
+                    Kuasai Seni <br>
+                    <span
+                        class="text-transparent bg-clip-text bg-gradient-to-r from-jootawan-500 to-yellow-500">Perniagaan
+                        Moden</span>
+                </h1>
+                <p class="mt-4 text-xl text-gray-600 max-w-2xl mx-auto mb-10 reveal" style="transition-delay: 200ms;">
+                    Destinasi utama anda untuk pendidikan perniagaan digital. Dari e-buku hingga bimbingan intensif,
+                    kami menyediakan rangka tindakan untuk membina empayar anda.
+                </p>
+                <div class="flex flex-col sm:flex-row justify-center gap-4 reveal" style="transition-delay: 300ms;">
+                    <button
+                        class="px-8 py-4 bg-jootawan-500 text-white rounded-xl font-bold text-lg hover:bg-jootawan-600 transition-all shadow-xl shadow-orange-500/30 flex items-center justify-center gap-2 transform hover:scale-105">
+                        Terokai Kursus <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                    </button>
+                    <button
+                        class="px-8 py-4 bg-white text-gray-800 border border-gray-200 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all flex items-center justify-center gap-2">
+                        Lihat Ekosistem
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="py-10 bg-white/80 border-y border-gray-100 backdrop-blur-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                <div class="reveal">
+                    <div class="text-4xl font-bold text-jootawan-600">50k+</div>
+                    <div class="text-gray-500 text-sm font-medium mt-1">Pelajar Aktif</div>
+                </div>
+                <div class="reveal" style="transition-delay: 100ms;">
+                    <div class="text-4xl font-bold text-jootawan-600">100+</div>
+                    <div class="text-gray-500 text-sm font-medium mt-1">Kursus Video</div>
+                </div>
+                <div class="reveal" style="transition-delay: 200ms;">
+                    <div class="text-4xl font-bold text-jootawan-600">$10M+</div>
+                    <div class="text-gray-500 text-sm font-medium mt-1">Pendapatan Pelanggan</div>
+                </div>
+                <div class="reveal" style="transition-delay: 300ms;">
+                    <div class="text-4xl font-bold text-jootawan-600">4.9/5</div>
+                    <div class="text-gray-500 text-sm font-medium mt-1">Penarafan Pengguna</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Brands Carousel Section (NEW CSS INFINITE SCROLL) -->
+    <section class="py-20 relative bg-gray-50/80 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-10 reveal">
+                <span class="text-jootawan-500 font-bold tracking-wider uppercase text-sm">Rangkaian Kami</span>
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mt-2">Dipercayai oleh Jenama Terkemuka</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto mt-2">Kami bekerjasama dengan pelbagai syarikat, dari syarikat
+                    baru yang berkembang pesat hingga perusahaan mapan.</p>
+            </div>
+
+            <!-- Infinite Scroll Carousel Container -->
+            <div class="scrolling-container reveal" style="transition-delay: 200ms;">
+                <div class="scrolling-track">
+                    <!-- Set of 8 unique Logos (First Batch) -->
+                    <div class="logo-item" title="EZYMart"><i data-lucide="store"
+                            class="w-10 h-10 text-gray-500 hover:text-jootawan-500 transition-colors"></i><span
+                            class="ml-3 text-xl font-bold text-gray-700">EZYMart</span></div>
+                    <div class="logo-item" title="TeknoBoost"><i data-lucide="cpu"
+                            class="w-10 h-10 text-gray-500 hover:text-jootawan-500 transition-colors"></i><span
+                            class="ml-3 text-xl font-bold text-gray-700">TeknoBoost</span></div>
+                    <div class="logo-item" title="GlobalTrade"><i data-lucide="globe"
+                            class="w-10 h-10 text-gray-500 hover:text-jootawan-500 transition-colors"></i><span
+                            class="ml-3 text-xl font-bold text-gray-700">GlobalTrade</span></div>
+                    <div class="logo-item" title="FinGenius"><i data-lucide="wallet"
+                            class="w-10 h-10 text-gray-500 hover:text-jootawan-500 transition-colors"></i><span
+                            class="ml-3 text-xl font-bold text-gray-700">FinGenius</span></div>
+                    <div class="logo-item" title="AgriFarm"><i data-lucide="leaf"
+                            class="w-10 h-10 text-gray-500 hover:text-jootawan-500 transition-colors"></i><span
+                            class="ml-3 text-xl font-bold text-gray-700">AgriFarm</span></div>
+                    <div class="logo-item" title="HomeDecor"><i data-lucide="lamp"
+                            class="w-10 h-10 text-gray-500 hover:text-jootawan-500 transition-colors"></i><span
+                            class="ml-3 text-xl font-bold text-gray-700">HomeDecor</span></div>
+                    <div class="logo-item" title="WiraApps"><i data-lucide="layers"
+                            class="w-10 h-10 text-gray-500 hover:text-jootawan-500 transition-colors"></i><span
+                            class="ml-3 text-xl font-bold text-gray-700">WiraApps</span></div>
+                    <div class="logo-item" title="SeniKraf"><i data-lucide="sparkles"
+                            class="w-10 h-10 text-gray-500 hover:text-jootawan-500 transition-colors"></i><span
+                            class="ml-3 text-xl font-bold text-gray-700">SeniKraf</span></div>
+
+                    <!-- Set of 8 unique Logos (Duplicated for seamless loop) -->
+                    <div class="logo-item" title="EZYMart"><i data-lucide="store"
+                            class="w-10 h-10 text-gray-500 hover:text-jootawan-500 transition-colors"></i><span
+                            class="ml-3 text-xl font-bold text-gray-700">EZYMart</span></div>
+                    <div class="logo-item" title="TeknoBoost"><i data-lucide="cpu"
+                            class="w-10 h-10 text-gray-500 hover:text-jootawan-500 transition-colors"></i><span
+                            class="ml-3 text-xl font-bold text-gray-700">TeknoBoost</span></div>
+                    <div class="logo-item" title="GlobalTrade"><i data-lucide="globe"
+                            class="w-10 h-10 text-gray-500 hover:text-jootawan-500 transition-colors"></i><span
+                            class="ml-3 text-xl font-bold text-gray-700">GlobalTrade</span></div>
+                    <div class="logo-item" title="FinGenius"><i data-lucide="wallet"
+                            class="w-10 h-10 text-gray-500 hover:text-jootawan-500 transition-colors"></i><span
+                            class="ml-3 text-xl font-bold text-gray-700">FinGenius</span></div>
+                    <div class="logo-item" title="AgriFarm"><i data-lucide="leaf"
+                            class="w-10 h-10 text-gray-500 hover:text-jootawan-500 transition-colors"></i><span
+                            class="ml-3 text-xl font-bold text-gray-700">AgriFarm</span></div>
+                    <div class="logo-item" title="HomeDecor"><i data-lucide="lamp"
+                            class="w-10 h-10 text-gray-500 hover:text-jootawan-500 transition-colors"></i><span
+                            class="ml-3 text-xl font-bold text-gray-700">HomeDecor</span></div>
+                    <div class="logo-item" title="WiraApps"><i data-lucide="layers"
+                            class="w-10 h-10 text-gray-500 hover:text-jootawan-500 transition-colors"></i><span
+                            class="ml-3 text-xl font-bold text-gray-700">WiraApps</span></div>
+                    <div class="logo-item" title="SeniKraf"><i data-lucide="sparkles"
+                            class="w-10 h-10 text-gray-500 hover:text-jootawan-500 transition-colors"></i><span
+                            class="ml-3 text-xl font-bold text-gray-700">SeniKraf</span></div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- Products Section (Info Products) -->
+    <section id="products" class="py-24 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 reveal">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Ilmu Itu Mata Wang</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">Pilih laluan pembelajaran anda. Strategi praktikal dan boleh
+                    diambil tindakan untuk era digital.</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Card 1 -->
+                <div class="glass-card p-8 rounded-2xl reveal">
+                    <div
+                        class="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center text-jootawan-500 mb-6">
+                        <i data-lucide="book-open" class="w-7 h-7"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-3">E-buku Premium</h3>
+                    <p class="text-gray-600 mb-6">Panduan ringkas dan berimpak tinggi tentang pemasaran, dropshipping,
+                        dan kewangan peribadi.</p>
+                    <a href="#"
+                        class="text-jootawan-600 font-semibold flex items-center hover:gap-2 transition-all">Mula
+                        Membaca <i data-lucide="chevron-right" class="w-4 h-4 ml-1"></i></a>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="glass-card p-8 rounded-2xl reveal"
+                    style="transition-delay: 100ms; border-color: rgba(249, 115, 22, 0.4);">
+                    <div
+                        class="absolute top-0 right-0 bg-jootawan-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">
+                        POPULAR</div>
+                    <div
+                        class="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center text-jootawan-500 mb-6">
+                        <i data-lucide="play-circle" class="w-7 h-7"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-3">Penguasaan Video</h3>
+                    <p class="text-gray-600 mb-6">Kursus video langkah demi langkah merangkumi kemahiran teknikal dan
+                        strategi perniagaan.</p>
+                    <a href="#"
+                        class="text-jootawan-600 font-semibold flex items-center hover:gap-2 transition-all">Tonton
+                        Pratonton <i data-lucide="chevron-right" class="w-4 h-4 ml-1"></i></a>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="glass-card p-8 rounded-2xl reveal" style="transition-delay: 200ms;">
+                    <div
+                        class="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center text-jootawan-500 mb-6">
+                        <i data-lucide="users" class="w-7 h-7"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-3">Seminar & Bimbingan</h3>
+                    <p class="text-gray-600 mb-6">Sertai acara langsung kami atau dapatkan bimbingan 1-lawan-1 daripada
+                        pemimpin industri.</p>
+                    <a href="#"
+                        class="text-jootawan-600 font-semibold flex items-center hover:gap-2 transition-all">Sertai
+                        Acara Seterusnya <i data-lucide="chevron-right" class="w-4 h-4 ml-1"></i></a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Ecosystem Section (Doit & Taut) -->
+    <section id="ecosystem" class="py-24 bg-gray-50/80 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 reveal">
+                <span class="text-jootawan-500 font-bold tracking-wider uppercase text-sm">Usaha Niaga Kami</span>
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mt-2">Ekosistem Jootawan</h2>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <!-- Doit Project -->
+                <div class="relative group reveal">
+                    <div
+                        class="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl transform rotate-1 group-hover:rotate-2 transition-transform opacity-10">
+                    </div>
+                    <div
+                        class="bg-white border border-gray-200 p-8 rounded-3xl relative z-10 hover:shadow-2xl transition-all duration-300">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div
+                                class="w-12 h-12 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">
+                                D</div>
+                            <h3 class="text-2xl font-bold text-gray-900">Doit</h3>
+                        </div>
+                        <p class="text-gray-600 mb-6">
+                            Agensi **Teknologi & Pemasaran** utama. Kami membina saluran jualan berpenukaran tinggi,
+                            perisian tersuai, dan melaksanakan kempen pemasaran berasaskan data untuk mengembangkan
+                            perniagaan.
+                        </p>
+                        <ul class="space-y-2 mb-8 text-gray-500">
+                            <li class="flex items-center"><i data-lucide="check-circle"
+                                    class="w-4 h-4 text-green-500 mr-2"></i> Pembangunan Aplikasi Tersuai</li>
+                            <li class="flex items-center"><i data-lucide="check-circle"
+                                    class="w-4 h-4 text-green-500 mr-2"></i> Pemasaran Prestasi</li>
+                        </ul>
+                        <button
+                            class="w-full py-3 border-2 border-indigo-600 text-indigo-600 font-bold rounded-lg hover:bg-indigo-600 hover:text-white transition-colors">
+                            Upah Agensi Doit
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Taut Project -->
+                <div class="relative group reveal" style="transition-delay: 200ms;">
+                    <div
+                        class="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-3xl transform -rotate-1 group-hover:-rotate-2 transition-transform opacity-10">
+                    </div>
+                    <div
+                        class="bg-white border border-gray-200 p-8 rounded-3xl relative z-10 hover:shadow-2xl transition-all duration-300">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div
+                                class="w-12 h-12 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold">
+                                T</div>
+                            <h3 class="text-2xl font-bold text-gray-900">Taut</h3>
+                        </div>
+                        <p class="text-gray-600 mb-6">
+                            **Platform E-dagang** generasi seterusnya. Seperti Shopify, tetapi dibina untuk pasaran
+                            tempatan. Lancarkan kedai dalam talian anda dalam beberapa minit dengan pembayaran dan
+                            logistik bersepadu.
+                        </p>
+                        <ul class="space-y-2 mb-8 text-gray-500">
+                            <li class="flex items-center"><i data-lucide="check-circle"
+                                    class="w-4 h-4 text-green-500 mr-2"></i> Tiada Pengekodan Diperlukan</li>
+                            <li class="flex items-center"><i data-lucide="check-circle"
+                                    class="w-4 h-4 text-green-500 mr-2"></i> Gerbang Pembayaran Tempatan</li>
+                        </ul>
+                        <button
+                            class="w-full py-3 border-2 border-emerald-500 text-emerald-500 font-bold rounded-lg hover:bg-emerald-500 hover:text-white transition-colors">
+                            Mulakan Kedai dengan Taut
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="py-24 relative bg-gray-50/80 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 reveal">
+                <span class="text-jootawan-500 font-bold tracking-wider uppercase text-sm">Kejayaan Sebenar</span>
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mt-2">Dengar daripada Jootawan Sejati</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto mt-4">Kisah-kisah inspirasi daripada pelanggan kami yang telah
+                    mencapai impian keusahawanan mereka.</p>
+            </div>
+
+            <!-- Video Testimonials Grid (4 Videos) -->
+            <h3 class="text-2xl font-bold text-gray-800 mb-8 reveal">Video Inspirasi Kami</h3>
+            <div class="grid md:grid-cols-2 gap-8 mb-20">
+                <!-- Video 1 -->
+                <div class="reveal">
+                    <div
+                        class="relative w-full aspect-video bg-gray-900 rounded-xl overflow-hidden shadow-2xl flex items-center justify-center cursor-pointer group hover:shadow-jootawan-500/30 transition-shadow">
+                        <!-- Placeholder Image/Video Thumbnail -->
+                        <img src="https://placehold.co/1200x675/1e293b/ffffff?text=VIDEO+1%3A+SARAH+M."
+                            alt="Testimonial Video Sarah M."
+                            class="absolute inset-0 w-full h-full object-cover opacity-70 transition-opacity group-hover:opacity-80">
+
+                        <!-- Play Button Overlay -->
+                        <div
+                            class="relative z-10 p-4 bg-jootawan-500 rounded-full group-hover:scale-110 transition-transform duration-300 shadow-xl">
+                            <i data-lucide="play-circle" class="w-12 h-12 text-white"></i>
+                        </div>
+                        <p
+                            class="absolute bottom-4 left-4 text-white text-lg font-semibold bg-black/50 px-3 py-1 rounded">
+                            "Mencapai $100K Pertama Saya" - Sarah M.
+                        </p>
+                    </div>
+                </div>
+                <!-- Video 2 -->
+                <div class="reveal" style="transition-delay: 100ms;">
+                    <div
+                        class="relative w-full aspect-video bg-gray-900 rounded-xl overflow-hidden shadow-2xl flex items-center justify-center cursor-pointer group hover:shadow-jootawan-500/30 transition-shadow">
+                        <img src="https://placehold.co/1200x675/1e293b/ffffff?text=VIDEO+2%3A+ALI+B."
+                            alt="Testimonial Video Ali B."
+                            class="absolute inset-0 w-full h-full object-cover opacity-70 transition-opacity group-hover:opacity-80">
+                        <div
+                            class="relative z-10 p-4 bg-jootawan-500 rounded-full group-hover:scale-110 transition-transform duration-300 shadow-xl">
+                            <i data-lucide="play-circle" class="w-12 h-12 text-white"></i>
+                        </div>
+                        <p
+                            class="absolute bottom-4 left-4 text-white text-lg font-semibold bg-black/50 px-3 py-1 rounded">
+                            "Berhenti Kerja Makan Gaji" - Ali B.
+                        </p>
+                    </div>
+                </div>
+                <!-- Video 3 -->
+                <div class="reveal" style="transition-delay: 200ms;">
+                    <div
+                        class="relative w-full aspect-video bg-gray-900 rounded-xl overflow-hidden shadow-2xl flex items-center justify-center cursor-pointer group hover:shadow-jootawan-500/30 transition-shadow">
+                        <img src="https://placehold.co/1200x675/1e293b/ffffff?text=VIDEO+3%3A+CHEE+L."
+                            alt="Testimonial Video Chee L."
+                            class="absolute inset-0 w-full h-full object-cover opacity-70 transition-opacity group-hover:opacity-80">
+                        <div
+                            class="relative z-10 p-4 bg-jootawan-500 rounded-full group-hover:scale-110 transition-transform duration-300 shadow-xl">
+                            <i data-lucide="play-circle" class="w-12 h-12 text-white"></i>
+                        </div>
+                        <p
+                            class="absolute bottom-4 left-4 text-white text-lg font-semibold bg-black/50 px-3 py-1 rounded">
+                            "Tautan Mengubah Permainan" - Chee L.
+                        </p>
+                    </div>
+                </div>
+                <!-- Video 4 -->
+                <div class="reveal" style="transition-delay: 300ms;">
+                    <div
+                        class="relative w-full aspect-video bg-gray-900 rounded-xl overflow-hidden shadow-2xl flex items-center justify-center cursor-pointer group hover:shadow-jootawan-500/30 transition-shadow">
+                        <img src="https://placehold.co/1200x675/1e293b/ffffff?text=VIDEO+4%3A+DEVI+R."
+                            alt="Testimonial Video Devi R."
+                            class="absolute inset-0 w-full h-full object-cover opacity-70 transition-opacity group-hover:opacity-80">
+                        <div
+                            class="relative z-10 p-4 bg-jootawan-500 rounded-full group-hover:scale-110 transition-transform duration-300 shadow-xl">
+                            <i data-lucide="play-circle" class="w-12 h-12 text-white"></i>
+                        </div>
+                        <p
+                            class="absolute bottom-4 left-4 text-white text-lg font-semibold bg-black/50 px-3 py-1 rounded">
+                            "Perniagaan Saya Skala 10x" - Devi R.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Text Testimonials Grid (4 Text) -->
+            <h3 class="text-2xl font-bold text-gray-800 mb-8 reveal">Pengalaman Pelajar</h3>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Text Testimonial 1 -->
+                <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-lg reveal">
+                    <i data-lucide="quote" class="w-6 h-6 text-jootawan-500 mb-3"></i>
+                    <p class="text-gray-700 italic mb-4 text-base">
+                        "Kursus video Jootawan mengubah cara saya berfikir tentang pemasaran digital. Ia mudah difahami
+                        dan segera memberikan hasil."
+                    </p>
+                    <div class="flex items-center">
+                        <img src="https://placehold.co/40x40/fdb446/ffffff?text=AH" alt="Avatar"
+                            class="w-10 h-10 rounded-full mr-3 bg-jootawan-100">
+                        <div>
+                            <p class="font-bold text-gray-900">Ahmad H.</p>
+                            <p class="text-sm text-gray-500">Pengasas, KedaiMaya</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Text Testimonial 2 -->
+                <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-lg reveal"
+                    style="transition-delay: 100ms;">
+                    <i data-lucide="quote" class="w-6 h-6 text-jootawan-500 mb-3"></i>
+                    <p class="text-gray-700 italic mb-4 text-base">
+                        "Menggunakan platform Taut menjimatkan saya berbulan-bulan persediaan e-dagang. Sokongan
+                        tempatan benar-benar membuat perbezaan."
+                    </p>
+                    <div class="flex items-center">
+                        <img src="https://placehold.co/40x40/a78bfa/ffffff?text=ZL" alt="Avatar"
+                            class="w-10 h-10 rounded-full mr-3 bg-indigo-100">
+                        <div>
+                            <p class="font-bold text-gray-900">Zul L.</p>
+                            <p class="text-sm text-gray-500">Usahawan E-dagang</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Text Testimonial 3 -->
+                <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-lg reveal"
+                    style="transition-delay: 200ms;">
+                    <i data-lucide="quote" class="w-6 h-6 text-jootawan-500 mb-3"></i>
+                    <p class="text-gray-700 italic mb-4 text-base">
+                        "Program bimbingan adalah luar biasa. Saya mendapat nasihat 1-lawan-1 yang saya perlukan untuk
+                        mengatasi halangan jualan saya."
+                    </p>
+                    <div class="flex items-center">
+                        <img src="https://placehold.co/40x40/ffc0cb/ffffff?text=NF" alt="Avatar"
+                            class="w-10 h-10 rounded-full mr-3 bg-pink-100">
+                        <div>
+                            <p class="font-bold text-gray-900">Nadia F.</p>
+                            <p class="text-sm text-gray-500">Pakar Pemasaran</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Text Testimonial 4 -->
+                <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-lg reveal"
+                    style="transition-delay: 300ms;">
+                    <i data-lucide="quote" class="w-6 h-6 text-jootawan-500 mb-3"></i>
+                    <p class="text-gray-700 italic mb-4 text-base">
+                        "Saya suka e-buku tentang kewangan peribadi. Ia sangat praktikal dan membantu saya menyusun
+                        strategi pelaburan saya."
+                    </p>
+                    <div class="flex items-center">
+                        <img src="https://placehold.co/40x40/93c5fd/ffffff?text=MI" alt="Avatar"
+                            class="w-10 h-10 rounded-full mr-3 bg-blue-100">
+                        <div>
+                            <p class="font-bold text-gray-900">Michael I.</p>
+                            <p class="text-sm text-gray-500">Pelabur Awal</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Jootawan Section -->
+    <section id="about" class="py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="reveal">
+                    <span class="text-jootawan-500 font-bold tracking-wider uppercase text-sm">Cerita Kami</span>
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mt-2 mb-6">Mengenai Jootawan</h2>
+                    <p class="text-lg text-gray-600 mb-4">
+                        Jootawan diasaskan oleh **Ammar Zahar** pada tahun 2010. Ia bermula sebagai sebuah media yang
+                        berkongsi ilmu, tips serta kandungan berkenaan dengan keusahawanan.
+                    </p>
+                    <p class="text-lg text-gray-600">
+                        Sejak itu, kami telah berkembang menjadi sebuah ekosistem penuh yang menyediakan pendidikan,
+                        perisian, dan agensi pemasaran untuk membantu usahawan tempatan membina dan mengembangkan
+                        empayar digital mereka.
+                    </p>
+                </div>
+                <div class="reveal">
+                    <!-- Placeholder image/graphic for About Us -->
+                    <div
+                        class="bg-gray-100 h-64 md:h-96 rounded-2xl flex items-center justify-center border-2 border-dashed border-gray-300">
+                        <i data-lucide="trending-up" class="w-16 h-16 text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="py-20 relative overflow-hidden">
+        <div class="absolute inset-0 bg-jootawan-500 opacity-90"></div>
+        <div class="max-w-4xl mx-auto px-4 text-center relative z-10 text-white">
+            <h2 class="text-4xl font-bold mb-6">Bersedia untuk Mengubah Hidup Anda?</h2>
+            <p class="text-xl mb-10 text-orange-100">Sertai ribuan usahawan yang telah mengubah takdir kewangan mereka
+                dengan Jootawan.</p>
+            <form class="flex flex-col sm:flex-row gap-4 justify-center max-w-lg mx-auto">
+                <input type="email" placeholder="Masukkan e-mel anda"
+                    class="px-6 py-4 rounded-lg text-gray-900 w-full focus:outline-none focus:ring-4 focus:ring-orange-300">
+                <button
+                    class="bg-gray-900 text-white px-8 py-4 rounded-lg font-bold hover:bg-gray-800 transition-colors whitespace-nowrap">
+                    Sertai Percuma
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white pt-16 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8 mb-12">
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <img src="img/logo jootawan.svg" alt="Jootawan Logo" class="h-8">
+                        <span class="font-bold text-xl">JOOTAWAN</span>
+                    </div>
+                    <p class="text-gray-400 text-sm">Memperkasakan generasi pemimpin perniagaan seterusnya melalui
+                        pendidikan dan teknologi.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Belajar</h4>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li><a href="#" class="hover:text-jootawan-500 transition-colors">Kursus</a></li>
+                        <li><a href="#" class="hover:text-jootawan-500 transition-colors">E-buku</a></li>
+                        <li><a href="#" class="hover:text-jootawan-500 transition-colors">Seminar</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Projek</h4>
+                    <ul class="space-y-2 text-gray-400 text-sm">
+                        <li><a href="#" class="hover:text-jootawan-500 transition-colors">Agensi Doit</a></li>
+                        <li><a href="#" class="hover:text-jootawan-500 transition-colors">Platform Taut</a></li>
+                        <li><a href="#" class="hover:text-jootawan-500 transition-colors">Kerjaya</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Hubungi</h4>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white"><i data-lucide="facebook"
+                                class="w-5 h-5"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white"><i data-lucide="twitter"
+                                class="w-5 h-5"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white"><i data-lucide="instagram"
+                                class="w-5 h-5"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white"><i data-lucide="linkedin"
+                                class="w-5 h-5"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-8 text-center text-gray-500 text-sm">
+                &copy; 2023 Jootawan Group. Hak cipta terpelihara.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Navbar scroll effect
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('bg-white/95', 'backdrop-blur-md', 'shadow-sm');
+            } else {
+                navbar.classList.remove('bg-white/95', 'backdrop-blur-md', 'shadow-sm');
+            }
+        });
+
+        // Mobile Menu Toggle
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        menuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Intersection Observer for scroll animations
+        const revealElements = document.querySelectorAll('.reveal');
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        revealElements.forEach(el => revealObserver.observe(el));
+
+        // --- THREE.JS BACKGROUND SCENE (Flying Cash) ---
+        const initThreeJSBackground = () => {
+            const container = document.getElementById('canvas-container');
+
+            // Scene setup
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0xffffff, 10, 50);
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xff9900, 0.5); // Orange tinted light
+            directionalLight.position.set(10, 10, 10);
+            scene.add(directionalLight);
+
+            // Helper to create "flying cash" textures
+            const createCashTexture = (symbol) => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 256;
+                canvas.height = 128; // Rectangular shape for a bill
+                const ctx = canvas.getContext('2d');
+
+                // Banknote Green Background
+                ctx.fillStyle = '#4c9b3a'; // Banknote Green
+                ctx.fillRect(0, 0, 256, 128);
+
+                // Stylized border (light green/gold)
+                ctx.strokeStyle = '#9be18e';
+                ctx.lineWidth = 10;
+                ctx.strokeRect(5, 5, 246, 118);
+
+                // Text (Symbol in the center)
+                ctx.font = `bold 60px "Outfit", sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#f7e8a9'; // Gold/Yellow accent
+                ctx.fillText(symbol, 128, 64);
+
+                // Add micro-print effect (simple line pattern)
+                ctx.strokeStyle = '#3a7d2c';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < 5; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, 20 + i * 20);
+                    ctx.lineTo(256, 20 + i * 20);
+                    ctx.stroke();
+                }
+
+                return new THREE.CanvasTexture(canvas);
+            };
+
+            const symbols = ['$', '€', '¥', '£', 'RM', 'K']; // K used for a generic 'Kwang' or 'Cash' symbol
+            const cashTextures = symbols.map(s => createCashTexture(s));
+
+            // Flatter box geometry to resemble paper bills
+            const geometry = new THREE.BoxGeometry(2.5, 1.2, 0.1);
+
+            const objects = [];
+
+            // Create scattered objects
+            for (let i = 0; i < 35; i++) {
+                const texture = cashTextures[Math.floor(Math.random() * cashTextures.length)];
+
+                // Use the texture only on the front face (face 4)
+                const materials = [
+                    new THREE.MeshPhongMaterial({ color: 0x4c9b3a }), // Sides
+                    new THREE.MeshPhongMaterial({ color: 0x4c9b3a }), // Sides
+                    new THREE.MeshPhongMaterial({ color: 0x4c9b3a }), // Sides
+                    new THREE.MeshPhongMaterial({ color: 0x4c9b3a }), // Sides
+                    new THREE.MeshPhongMaterial({ map: texture, shininess: 30 }), // Front Face
+                    new THREE.MeshPhongMaterial({ map: texture, shininess: 30 })  // Back Face (same texture)
+                ];
+
+                const mesh = new THREE.Mesh(geometry, materials);
+
+                // Random positions
+                mesh.position.x = (Math.random() - 0.5) * 40;
+                mesh.position.y = (Math.random() - 0.5) * 40;
+                mesh.position.z = (Math.random() - 0.5) * 30 - 10; // Push them back a bit
+
+                // Random rotation speeds
+                mesh.userData = {
+                    rotX: (Math.random() - 0.5) * 0.02,
+                    rotY: (Math.random() - 0.5) * 0.02
+                };
+
+                // Random initial rotation for variety (bills should mostly be flat)
+                mesh.rotation.x = Math.random() * Math.PI;
+                mesh.rotation.y = Math.random() * Math.PI;
+
+                // Random scaling
+                const scale = Math.random() * 0.8 + 0.6;
+                mesh.scale.set(scale, scale, scale);
+
+                scene.add(mesh);
+                objects.push(mesh);
+            }
+
+            camera.position.z = 15;
+
+            // Mouse interaction
+            let mouseX = 0;
+            let mouseY = 0;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX - window.innerWidth / 2) * 0.001;
+                mouseY = (event.clientY - window.innerHeight / 2) * 0.001;
+            });
+
+            // Animation Loop
+            const animate = () => {
+                requestAnimationFrame(animate);
+
+                // Rotate objects
+                objects.forEach(obj => {
+                    obj.rotation.x += obj.userData.rotX;
+                    obj.rotation.y += obj.userData.rotY;
+
+                    // Gentle floating movement
+                    obj.position.y += Math.sin(Date.now() * 0.001 + obj.position.x) * 0.005;
+                });
+
+                // Camera parallax based on mouse
+                camera.position.x += (mouseX * 5 - camera.position.x) * 0.05;
+                camera.position.y += (-mouseY * 5 - camera.position.y) * 0.05;
+                camera.lookAt(scene.position);
+
+                renderer.render(scene, camera);
+            };
+
+            animate();
+
+            // Handle Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+
+
+        // Start 3D effects on load
+        window.onload = function () {
+            // Start the background cash animation
+            initThreeJSBackground();
+        }
+
+    </script>
+</body>
+
+</html>
